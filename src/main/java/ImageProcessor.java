@@ -11,14 +11,13 @@ import java.util.stream.Collectors;
 
 public class ImageProcessor
 {
-    private List<BufferedImage> images;
+    private List<String> names;
     private static int imageNumber = 1;
 
     public ImageProcessor() throws IOException, ExecutionException, InterruptedException {
-        this.images = new LinkedList<>();
+        this.names = new LinkedList<>();
         for(int i = 1; i <= 3; i++){
-            String path = "/" + i + ".jpg";
-            images.add(ImageIO.read(Objects.requireNonNull(ImageProcessor.class.getResourceAsStream((path)))));
+            names.add(Integer.toString(i));
         }
         transform(1);
         transform(3);
@@ -27,7 +26,7 @@ public class ImageProcessor
     public void transform(int threadNumber) throws ExecutionException, InterruptedException {
         long time = System.currentTimeMillis();
         ForkJoinPool customThreadPool = new ForkJoinPool(threadNumber);
-        customThreadPool.submit(() -> images.parallelStream()
+        customThreadPool.submit(() -> names.parallelStream()
                 .map(this::getImageWithNameDto)
                 .map(this::swapColors)
                 .map(this::saveImage)
@@ -35,15 +34,15 @@ public class ImageProcessor
         System.out.println(System.currentTimeMillis() - time);
     }
 
-    private ImageWithNameDto getImageWithNameDto(BufferedImage image){
-        String name = getImageNumber() + "o.jpg";
-        return new ImageWithNameDto(image, name);
-    }
-
-    private synchronized int getImageNumber(){
-        int x = imageNumber;
-        imageNumber = imageNumber % 20 + 1;
-        return x;
+    private ImageWithNameDto getImageWithNameDto(String path){
+        try {
+            String pathString = "/" + path + ".jpg";
+            BufferedImage image =
+                    ImageIO.read(Objects.requireNonNull(ImageProcessor.class.getResourceAsStream((pathString))));
+            return new ImageWithNameDto(image, "o" + path + "jpg");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private ImageWithNameDto swapColors(ImageWithNameDto imageWithNameDto){
